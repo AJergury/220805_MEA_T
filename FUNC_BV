@@ -1,0 +1,9 @@
+% FUNC_BV
+% 函数功能：求解不同温度下的饱和蒸汽压
+% 备注格式： 单位 含义 参考文献
+% 参数命名规则：属性_位置_an/ca_sim/exp
+%% 饱和蒸汽压 KPa
+function i = FUNC_BV(i0,a,beta,eta,T) 
+c = Input_Parameter ; 
+i = i0.*a.*( exp(beta.*2.*c.F./c.R./T.*eta) -exp(-(1-beta).*2.*c.F./c.R./T.*eta)) ;
+end
