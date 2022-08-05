@@ -1,0 +1,32 @@
+% Input_Parameter
+% 建模目的：便于参数分类、修正
+% 内容：参数数值 
+% 参数命名规则：属性_位置_an/ca_sim/exp
+
+function c = Input_Parameter
+%% 固定常量
+c.P_ref = 101325 ;  % [Pa] 参考压力
+
+%% 模型几何
+c.thick_AGDL = 1.7e-4 ; % [m] GDL
+c.thick_CGDL = 1.6e-4 ; % [m] GDL
+c.thick_ACL = 2.5e-6 ; % [m] ACL
+c.thick_CCL = 7.5e-6 ; % [m] CCL
+c.thick_MEM = 8e-6 ; % [m] MEM
+c.L = [ c.thick_AGDL c.thick_ACL c.thick_MEM c.thick_CCL c.thick_CGDL ] ;
+
+%% 电化学参数
+c.U = 1.15:-0.1:0 ; % V 需要计算的电压值
+c.deltaS_HOR = 0.104 ; % [J/(mol*K)] reaction entropy of HOR
+c.deltaS_ORR = -163.3 ; % [J/(mol*K)] reaction entropy of ORR
+
+%% 工况条件
+c.P_A = 2.566e5 ; % [Pa] 阳极流道压力
+c.P_C = 2.467e5 ; % [Pa] 阴极流道压力
+c.x_h2 = 0.8 ; % 阳极氢气摩尔分数
+c.x_h2oa = 0.2 ; % 阳极水摩尔分数
+c.x_o2 = 0.21 ; % 阴极氧气摩尔分数
+c.x_h2oc = 0.2 ; % 阴极水摩尔分数
+c.x_n2 = 0.59 ; % 阴极氮气摩尔分数
+%% 
+end
