@@ -1,0 +1,54 @@
+% Main_MEASelection
+% 建模目的：考虑电势、温度影响
+% 建模内容：包含MEM、GDL、CL共五层
+% 备注格式： 单位 含义 参考文献
+% 参数命名规则：属性_位置_an/ca_sim/exp
+clc
+clear
+close all
+%% 导入常量
+c = Input_Parameter ; 
+L = c.L ; 
+U = c.U ;
+% 固定常量，无需更改
+% F = const.F;                                                     % [As/mol]  Faraday constant
+% R = const.R;                                                     % [J/mol K] gas constant
+% M_o2 = const.M_o2 ;                                              % g/mol 氧气摩尔质量
+% M_h2 = const.M_h2 ;                                              % g/mol 氢气摩尔质量
+% M_n2 = const.M_n2 ;                                              % g/mol 氮气摩尔质量
+% M_h2o = const.M_h2o ;                                            % g/mol 水摩尔质量
+% M_air = const.M_air ;                                            % g/mol 空气摩尔质量
+% r_o2 = const.r_o2 ;                                              % 氧气占空气的体积分数，干空气
+% D_H = const.D_H ;                                                % 热值
+%% 划分网格
+Lsum = [0,cumsum(L)] ; % m 区域分解点位置
+Nd = numel(L) ; % 域数量
+N_node = 15 ; % 每个区域的节点数量
+node = linspace(0,Nd,N_node.*Nd+1 ) ; % 每个区域分成N_node份
+xmesh = interp1(0:Nd ,Lsum ,node ) ; % 对应域node点的节点位置
+xmesh = sort([xmesh , Lsum( 2 : end-1 )]) ; % m 将分解点位置重新加入并排序,得到总网格节点数
+
+%% 求解器设置
+options = bvpset('vectorized','on','NMax',1e3,'RelTol',1e-4,'AbsTol',1e-6) ; 
+% 微分方程求解器设置
+% vectorized表示ODE函数可以一次性向求解器传递整个列数量数组
+% NMax表示对 BVP 求解时允许的最大网格点数为1e3
+% RelTol表示相对误差值1e-4
+% AbsTol表示绝对误差值1e-6
+
+%% 参数扫描
+I = zeros(size(U)) ; % A/m2 与电压相对应的电流密度
+SOL = cell(size(U)) ; % 与U对应解储存的空间
+Np = size(U) ; % 需要扫描参数的数量
+Neq = size(sol.y,1)./2 ; % 微分方程数量
+% 储存解
+for k = 1:Np
+    sol = bvp4c( @Model_odefun , @(yL,yR) bcfun(yL,yR,U{k}) , sol , options) ; % 求解微分方程
+    SOL{k} = sol ; % 将解储存
+    I{k} = sol.y(2,end)./1e4 ; % A/cm2 电流密度 由A/m2 转化为A/cm2  
+end
+data_IU = [I , U] ;
+
+%% 结果后处理（细化网格及计算结果）
+
+
