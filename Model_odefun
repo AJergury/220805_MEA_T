@@ -1,0 +1,68 @@
+% Model_Electrochemical
+% 建模目的：微分方程组
+% 建模内容：包含MEM、GDL、CL共五层
+% 备注格式： 单位 含义 参考文献
+% 参数命名规则：属性_位置_an/ca_sim/exp
+
+function dxdy = Model_odefun(x,y,subdomain)
+c = Input_Parameter ; 
+% 读取电势/通量
+phi_e = y ( 1 , : ) ; J_e = y( 2 ,: ) ;
+phi_p = y ( 3 , : ) ; J_p = y( 4 ,: ) ;
+T = y ( 4  , : ) ; J_T = y( 5 , : ) ;
+
+% 初始化所有导数
+z = zeros(size(x)) ;
+dphi_e = z ; dJ_e = z ;
+dphi_p = z ; dJ_p = z ;
+dT = z ; dJ_T = z ;
+
+% 计算衍生品
+switch subdomain 
+    case 1 % AGDL
+        dphi_e = -J_e ./ sigma_e_AGDL ; % 电子通量 ：je = -sigma*grad(phi_e)
+        dT = -J_T./kappa_AGDL ; % 热通量 ：jT = -k*grad(T)
+        ST_e = -J_e .* dphi_e ; % 源项，焦耳第一定律,ST_e = sigma * grad(phi_e)^2 = je * grad(phi_e)
+        dJ_T = ST_e ; % 连续性方程：grad(jt) = ST
+    case 2 % ACL
+        dphi_e = - J_e ./ sigma_e_ACL ; % 电子通量 ：je = -sigma*grad(phi_e)
+        i = FUNC_BV(i0,a,beta,eta,T); % A/m3 , BV方程 
+        S_e =  -i; % 源项，BV方程
+        dJ_e =  S_e ; % 连续性方程：grad(J_e) = S_e 
+        dphi_p =  - J_p ./ sigma_p_ACL ; % 质子通量 ：jp = -sigma*grad(phi_p)
+        phi_0 = -T.* detaS_HOR ./(2.*c.F) -c.R.*T./2./c.F.*log(c.P_A.*c.x_h2./c.P_ref ) ; % 阳极可逆电势差
+        phi = phi_e - phi_p ; % 电子相与离子相电位差
+        eta = phi-phi_0 ; % 阳极活化过电位 
+        S_p = i ; % 源项，BV方程
+        dJ_p = S_p ; % 连续性方程： grad(J_p) = S_p 
+        ST_e = -J_e .* dphi_e ; % 源项，焦耳第一定律,ST_e = sigma * grad(phi_e)^2 = je * grad(phi_e)
+        ST_p = -J_p .* dphi_p ; % 源项，焦耳第一定律,ST_p = sigma * grad(phi_p)^2 = jp * grad(phi_p)
+        S_F = i./2./c.F ; % 源项，法拉第定律
+        ST_r = i.* eta -S_F.*T.*deltaS_HOR; % 
+        dT = -J_T ./kappa_ACL ; % 热通量 ：jT = -k*grad(T)
+        dJ_T = ST_e + ST_p + ST_r + ST_ad ; % 连续性方程 ：grad(jt) = ST
+    case 3 % MEM
+        dphi_p = -J_p ./ sigma_p_MEM ; % 质子通量 ：jp = -sigma*grad(phi_p)
+        dJ_p = S_p ; % 连续性方程： grad(J_p) = S_p 
+        dT = -J_T./kappa_MEM ; % 热通量 ：jT = -k*grad(T)
+        dJ_T = ST_p ; % 连续性方程 ：grad(jt) = ST
+    case 4 % CCL
+        dphi_e = -J_e ./ sigma_e_CCL ; % 电子通量 ：je = -sigma*grad(phi_e)
+        dJ_e =  S_e ; % 连续性方程：grad(J_e) = S_e 
+        dphi_p =  - J_p ./ sigma_p_CCL ; % 质子通量 ：jp = -sigma*grad(phi_p)
+        dJ_p = S_p ; % 连续性方程： grad(J_p) = S_p 
+        dT = -J_T./kappa_CCL ; % 热通量 ：jT = -k*grad(T)
+        dJ_T = ST_e +ST_p + ST_r + ST_ad + ST_ec; % 连续性方程 ：grad(jt) = ST
+    case 5 % CGDL
+        dphi_e = -J_e ./ sigma_e_CGDL ; % 电子通量 ：je = -sigma*grad(phi_e)
+        dT = -J_T./kappa_CGDL ; % 热通量 ：jT = -k*grad(T)
+        ST_e = -J_e .* dphi_e ; % 源项，焦耳第一定律,ST_e = sigma * grad(phi_e)^2 = je * grad(phi_e)
+        dJ_T = ST_e + ST_p ; % 连续性方程：grad(jt) = ST
+end
+
+% 组装中间计算结果
+dydx = [dphi_e;dJ_e;
+        dphi_p;dJ_p;
+        dT ;dJ_T];
+
+end
